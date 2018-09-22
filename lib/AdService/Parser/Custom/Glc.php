@@ -42,8 +42,7 @@ class Glc {
 	 */
 	public function addInfo() {
 
-		$adListResult = array();
-		foreach ($this->_adList as $ad) {
+		foreach ($this->_adList as $key => $ad) {
 
 			foreach ($this->_labelCityFrom as $cityNameFrom) {
 				// use for city with district like PARIS 18EME
@@ -71,10 +70,10 @@ class Glc {
 				$ad->addGeoLoc($geoLoc);
 			}
 
-			$adListResult[] = $ad;
+			$this->_adList[$key] = $ad;
 		}
 
-		return $adListResult;
+		return $this->_adList;
 	}
 
 	/**

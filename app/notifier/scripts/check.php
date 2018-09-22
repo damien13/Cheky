@@ -4,6 +4,8 @@ set_time_limit(0);
 
 use AdService\SiteConfigFactory;
 
+require_once "lib/Custom/generalFunction.php";
+
 class Main {
 	/**
 	 * @var Application
@@ -29,7 +31,7 @@ class Main {
 	protected $_logger;
 	protected $_running = false;
 
-	CONST IS_DEV = true;
+	CONST IS_DEV = false;
 
 	public function __construct(
 		\Config_Lite $config,
@@ -105,6 +107,7 @@ class Main {
 
 	public function check() {
 
+		$this->_logger->info("STARTING...");
 		if (!self::IS_DEV) {
 
 			$checkStart = (int)$this->_config->get("general", "check_start", 7);
@@ -385,17 +388,17 @@ class Main {
 					$ads_count > 1 ? "s" : ""
 				));
 
-				// Paramètres du site d'annonce
 				$siteConfig = \AdService\SiteConfigFactory::factory($alert->url);
 
-
 				// Ici on enrichit
+				$mainInfo = new \AdService\Parser\MainCustom($ads);
+				$ads      = $mainInfo->getAdList();
 
-				//$mainInfo = new \AdService\Parser\MainCustom($ads);
-				//$ads = $mainInfo->getAdList();
-				$ads = $this->getFullAd($parser, $ads);
-
+				// Paramètres du site d'annonce
 				foreach ($ads AS $ad) {
+
+					$adProcessed = $this->getFullAdInfo($ad->getLink(), $this->_app, $parser);
+					$ad          = $ad->setFromArray($adProcessed->toArray(), true);
 
 					$time = $ad->getDate();
 					$id   = $ad->getId();
@@ -417,6 +420,7 @@ class Main {
 						$alert->max_id = $id;
 					}
 				}
+
 
 				// On conserve 250 IDs d'annonce vues.
 				if (250 < count($alert->last_id)) {
@@ -454,8 +458,9 @@ class Main {
 							$this->_mailer->Body    = require DOCUMENT_ROOT . "/app/notifier/views/mail-ads.phtml";
 							$this->_mailer->AltBody = require DOCUMENT_ROOT . "/app/notifier/views/mail-ads-text.phtml";
 							try {
-								if(!self::IS_DEV){
-									$this->_mailer->send();
+								$this->_mailer->send();
+								if (self::IS_DEV) {
+									die();
 								}
 							}
 							catch (phpmailerException $e) {
@@ -470,8 +475,9 @@ class Main {
 								$this->_mailer->Body    = require DOCUMENT_ROOT . "/app/notifier/views/mail-ad-single.phtml";
 								$this->_mailer->AltBody = require DOCUMENT_ROOT . "/app/notifier/views/mail-ad-single-text.phtml";
 								try {
-									if(!self::IS_DEV){
-										$this->_mailer->send();
+									$this->_mailer->send();
+									if (self::IS_DEV) {
+										die();
 									}
 								}
 								catch (phpmailerException $e) {
@@ -583,54 +589,47 @@ class Main {
 	}
 
 	/**
+	 * @param $link
+	 * @param $app
 	 * @param $parser
-	 * @param $adList
-	 * @return array
+	 * @return \AdService\Ad
 	 */
-	public function getFullAd($parser, $adList){
+	public
+	function getFullAdInfo($link, $app, $parser) {
+		$connector = $app->getConnector($link)
+			->setFollowLocation(true)
+			->setCookiePath(COOKIE_PATH);
+		$content   = $connector->request();
 
-		$adListResult = array();
-		foreach ($adList as $ad) {
-			$connector = $this->_app->getConnector($ad->getLink())
-				->setFollowLocation(true)
-				->setCookiePath(COOKIE_PATH);
-			$content   = $connector->request();
-			if (200 !== $connector->getRespondCode()) {
-				$errors["link"] = "Cette adresse ne semble pas valide (Erreur " . $connector->getRespondCode() . ").";
+		$ad = new \AdService\Ad();
+		if (200 !== $connector->getRespondCode()) {
+			$errors["link"] = "Cette adresse ne semble pas valide (Erreur " . $connector->getRespondCode() . ").";
 
+		}
+		else {
+			$ad = $parser->processAd(
+				$content,
+				parse_url($link, PHP_URL_SCHEME)
+			);
+			if (!$ad) {
+				$errors["link"] = "Impossible de sauvegarder l'annonce (annonce hors ligne ou format des données invalides).";
+
+				return null;
 			}
-			else {
-
-				if($parser instanceof \AdService\Parser\Seloger){
-					$ad = $parser->process(
-						$content
-					);
-				}else {
-
-					$ad = $parser->processAd(
-						$content,
-						parse_url($ad->getLink(), PHP_URL_SCHEME)
-					);
-				}
-				if (!$ad) {
-					$errors["link"] = "Impossible de sauvegarder l'annonce (annonce hors ligne ou format des données invalides).";
-				}
-			}
-
-			$adListResult[] = $ad;
 		}
 
-		return $adListResult;
-
+		return $ad;
 	}
 
-	public function shutdown() {
+	public
+	function shutdown() {
 		if ($this->_running && is_file($this->_lockFile)) {
 			unlink($this->_lockFile);
 		}
 	}
 
-	public function sigHandler($no) {
+	public
+	function sigHandler($no) {
 		if (in_array($no, array(SIGTERM, SIGINT))) {
 			$this->_logger->info("[Pid " . getmypid() . "] QUIT (" . $no . ")");
 			$this->shutdown();
@@ -638,7 +637,8 @@ class Main {
 		}
 	}
 
-	protected function _lock() {
+	protected
+	function _lock() {
 		if (is_file($this->_lockFile)) {
 			throw new Exception("Un processus est en cours d'exécution.");
 		}
@@ -647,7 +647,8 @@ class Main {
 		return $this;
 	}
 
-	protected function _sendMailAlertLocked($alert, $siteConfig = null) {
+	protected
+	function _sendMailAlertLocked($alert, $siteConfig = null) {
 		if ($alert->error_count < 3) {
 			return;
 		}
@@ -694,6 +695,8 @@ class Main {
 	}
 }
 
+error_log("STARTING HERE");
+
 
 require __DIR__ . "/../../../bootstrap.php";
 
@@ -716,6 +719,7 @@ if (is_file(DOCUMENT_ROOT . "/var/.lock_update")) {
 }
 
 try {
+	Logger::getLogger("main")->info("MAIN FUNCTION HERE ");
 	$main = new Main($config, $app, $userStorage);
 }
 catch (\Exception $e) {

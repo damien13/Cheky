@@ -1,14 +1,11 @@
 <?php ob_start(); ?>
 
 <h1 style="font-size: 16px;">
-    Votre recherche :
-    <?php echo htmlspecialchars($alert->title, null, "UTF-8"); ?>
+    Votre recherche :<a href="<?php echo htmlspecialchars($alert->url, null, "UTF-8"); ?>" style="text-decoration: none; color: #0B6CDA;"><?php echo htmlspecialchars($alert->title, null, "UTF-8"); ?></a>
 </h1>
 <p style="font-size: 14px; margin: 0;">
     <strong>
-    <a href="<?php echo htmlspecialchars($alert->url, null, "UTF-8"); ?>"
-        style="text-decoration: none; color: #0B6CDA;">LIEN DE RECHERCHE</a>
-<?php if (!empty($baseurl)) : ?>
+<?php if (!empty($baseurl) && false) : ?>
     - <a href="<?php echo $baseurl; ?>?mod=mail&amp;a=form&amp;id=<?php
         echo $alert->id; ?>" style="text-decoration: none; color: #E77600;">MODIFIER</a>
     - <a href="<?php echo $baseurl; ?>?mod=mail&amp;a=toggle_status&amp;s=suspend&amp;id=<?php

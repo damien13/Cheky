@@ -43,17 +43,17 @@ class GeneralInfo {
 
 		$adListResult = array();
 
-		foreach ($this->_adList as $ad) {
+		foreach ($this->_adList as $key => $ad) {
 			$geoLoc = $ad->getGeoLoc();
 
 			$url = str_replace("#LONG#", $geoLoc[0]->getLongitudeCityTo(), $this->_urlCurlPopulation);
 			$url = str_replace("#LAT#", $geoLoc[0]->getLatitudeCityTo(), $url);
 // todo if ville existante, ne pas requeter et copier
 			$ad->setPopulation($this->parsePopulation($url));
-			$adListResult[] = $ad;
+			$this->_adList[$key] = $ad;
 		}
 
-		return $adListResult;
+		return $this->_adList;
 	}
 
 

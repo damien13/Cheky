@@ -110,10 +110,18 @@ class Ad {
 	}
 
 
-	public function setFromArray(array $options) {
+	public function setFromArray(array $options, $fillOnlyIfEmpty = false) {
 		foreach ($options AS $name => $value) {
 			if (property_exists($this, "_" . $name)) {
-				$this->{"_" . $name} = $value;
+
+				if(!$fillOnlyIfEmpty ){
+					$this->{"_" . $name} = $value;
+					continue;
+				}
+
+				if(empty($this->{"_" . $name})){
+					$this->{"_" . $name} = $value;
+				}
 			}
 		}
 
@@ -122,22 +130,31 @@ class Ad {
 
 	public function toArray() {
 		return array(
-			"id"           => $this->_id,
-			"link"         => $this->_link,
-			"title"        => $this->_title,
-			"description"  => $this->_description,
-			"price"        => $this->_price,
-			"currency"     => $this->_currency,
-			"date"         => $this->_date,
-			"category"     => $this->_category,
-			"country"      => $this->_country,
-			"city"         => $this->_city,
-			"zip_code"     => $this->_zip_code,
-			"professional" => $this->_professional,
-			"photos"       => $this->_photos,
-			"urgent"       => $this->_urgent,
-			"author"       => $this->_author,
-			"properties"   => $this->_properties,
+			"id"                   => $this->_id,
+			"link"                 => $this->_link,
+			"title"                => $this->_title,
+			"description"          => $this->_description,
+			"price"                => $this->_price,
+			"currency"             => $this->_currency,
+			"date"                 => $this->_date,
+			"category"             => $this->_category,
+			"country"              => $this->_country,
+			"city"                 => $this->_city,
+			"zip_code"             => $this->_zip_code,
+			"professional"         => $this->_professional,
+			"photos"               => $this->_photos,
+			"urgent"               => $this->_urgent,
+			"author"               => $this->_author,
+			"properties"           => $this->_properties,
+
+			// Custom
+			"city_department_name" => $this->_city_department_name,
+			"city_no_district"     => $this->_city_no_district,
+			"thumbnail_link"       => $this->_thumbnail_link,
+			"wikipedia_info"       => $this->_wikipedia_info,
+			"geoLoc"               => $this->_geoLoc,
+			"population"           => $this->_population
+
 		);
 	}
 
