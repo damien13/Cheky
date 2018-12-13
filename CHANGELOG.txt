@@ -1,3 +1,6 @@
+## Version 4.3.5
+
+ * correction: détection des valeurs "range".
 
 ## Version 4.3.4
 
@@ -239,4 +242,3 @@
  * ajout: nouveau système de contrôle des alertes.
  * ajout: inclure l'URL de recherche dans le mail.
 
- 
